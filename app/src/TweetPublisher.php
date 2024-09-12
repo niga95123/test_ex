@@ -61,6 +61,14 @@ class TweetPublisher
 
     private function isValidTweet($category, $content, $username)
     {
+        $dbc = new DataBaseConf();
+        $this->pdo = new PDO($dbc->getDsn(), $dbc->getUsername(), $dbc->getPassword());
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $stmt = $this->pdo->query("SELECT * FROM Category WHERE id = ". $category);
+        $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (empty($response)) {
+            return false;
+        }
         return !empty($category) && !empty($content) && !empty($username);
     }
 

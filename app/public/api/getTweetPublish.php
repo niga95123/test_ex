@@ -6,9 +6,9 @@ use App\TweetPublisher;
 
 // Инициализация и публикация твита
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $category = $_POST['category_id'] ?? null;
-    $content = $_POST['content'] ?? null;
-    $username = $_POST['username'] ?? null;
+    $category = filter_input(INPUT_POST, 'category_id', FILTER_SANITIZE_STRING) ?? null;
+    $content = filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING) ?? null;
+    $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING) ?? null;
 
     try {
         $tweetPublisher = new TweetPublisher();
