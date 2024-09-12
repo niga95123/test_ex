@@ -70,13 +70,3 @@ class TweetPublisher
         exit;
     }
 }
-
-// Инициализация и публикация твита
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $category = $_POST['category_id'] ?? null;
-    $content = $_POST['content'] ?? null;
-    $username = $_POST['username'] ?? null;
-
-    $tweetPublisher = new TweetPublisher();
-    $tweetPublisher->publishTweet($category, $content, $username);
-}

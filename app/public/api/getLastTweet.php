@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/TweetListener.php';
+require __DIR__ . '/../../src/TweetListener.php';
 
 use App\TweetListener;
 

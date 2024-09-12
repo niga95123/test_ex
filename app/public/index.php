@@ -1,31 +1,5 @@
-<?php
-
-require __DIR__ . '/../vendor/autoload.php';
-
-use App\DataBaseConf;
-
-$d = new DataBaseConf();
-
-try {
-    $pdo = new PDO($d->getDsn(), $d->getUsername(), $d->getPassword());
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Получение категорий
-    $stmt = $pdo->query("SELECT * FROM Category");
-    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Получение твитов
-    $stmt = $pdo->query("SELECT Twits.*, Category.title AS category_title FROM Twits JOIN Category ON Twits.CategoryId = Category.id ORDER BY CreatedAt DESC");
-    $tweets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo "Error: " . $e->getMessage();
-}
-
-?>
-
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <title>Tweets</title>
@@ -37,31 +11,68 @@ try {
 
     <form id="twitForm">
         <select id="category" name="category">
-            <?php foreach ($categories as $category): ?>
-                <option value="<?= htmlspecialchars($category['id']) ?>"><?= htmlspecialchars($category['title']) ?></option>
-            <?php endforeach; ?>
         </select>
+        <script>
+            axios.get('/api/getTool.php', {params : { methode: 'getCategoryAllData' }})
+                .then(response => {
+                    const options = response.data.ans;
+                    const selectElement = document.getElementById('category');
+
+                    options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.id;
+                        optionElement.textContent = option.title;
+                        selectElement.appendChild(optionElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Request failed:', error);
+                });
+
+
+            // Проверка наличия и заполненности всех необходимых таблиц
+            axios.get('/api/getTool.php', {params : { methode: 'getCheckFullnessDataBase' }})
+                .then(response => {
+                    if (response.data.ans.status === 'success') {
+                        console.log('DB check success');
+                    } else {
+                        console.log('DB check error any table or data was created');
+                    }
+                })
+                .catch(error => {
+                    console.error('Request failed:', error);
+                });
+        </script>
         <input type="text" id="content" name="content" placeholder="Enter your tweet">
         <input type="text" id="username" name="username" placeholder="Enter your username">
         <button type="submit">Tweet</button>
     </form>
 
     <div id="twits">
-        <?php foreach ($tweets as $tweet): ?>
-            <div>
-                <strong><?= $tweet['category_title'] ?></strong>
-                <p><?= $tweet['Content'] ?></p>
-                <small>by <?= $tweet['Username'] ?> at <?= $tweet['CreatedAt'] ?></small>
-            </div>
-        <?php endforeach; ?>
     </div>
+
+    <script>
+        axios.get('/api/getTool.php', {params : { methode: 'getTweetsAllData' }})
+            .then(response => {
+                const options = response.data.ans;
+                const tweetsDiv = document.getElementById('twits');
+
+                options.forEach(option => {
+                    const tweetDiv = document.createElement('div');
+                    tweetDiv.innerHTML = `<strong>${option.category_title}</strong><p>${option.Content}</p><small>by ${option.User_name} at ${option.CreatedAt}</small>`;
+                    tweetsDiv.prepend(tweetDiv);
+                });
+            })
+            .catch(error => {
+                console.error('Request failed:', error);
+            });
+    </script>
 
     <script>
         const form = document.getElementById('twitForm');
         const socket = io('http://localhost:3000');
 
-
-        axios.post('/listen.php')
+        axios.post('/api/listen.php')
             .then(response => {
                 console.log(response.data);
                 if (response.data.status === 'success') {
@@ -87,7 +98,7 @@ try {
             params.append('content', content);
             params.append('username', username);
 
-            axios.post('/TweetPublisher.php', params)
+            axios.post('/api/getTweetPublish.php', params)
                 .then(response => {
                     console.log(response.data);
                 })
@@ -105,25 +116,17 @@ try {
         });
 
         socket.on('new_twit', (tweet) => {
-            axios.post('/getLastTweet.php')
+            axios.get('/api/getLastTweet.php', [])
                 .then(response => {
                     const tweetsDiv = document.getElementById('twits');
-                    if (tweetsDiv) {
-                        const tweetDiv = document.createElement('div');
-                        tweetDiv.innerHTML = `<strong>${response.data.category_title}</strong><p>${response.data.content}</p><small>by ${response.data.user_name} at ${response.data.createdAt}</small>`;
-                        tweetsDiv.prepend(tweetDiv);
-                    } else {
-                        console.error('Element with id "twits" not found');
-                    }
-
+                    const tweetDiv = document.createElement('div');
+                    tweetDiv.innerHTML = `<strong>${response.data.category_title}</strong><p>${response.data.content}</p><small>by ${response.data.user_name} at ${response.data.createdAt}</small>`;
+                    tweetsDiv.prepend(tweetDiv);
                 })
                 .catch(error => {
                     console.error('Request failed:', error);
                 });
         });
-
-
-
     </script>
 </body>
 </html>
